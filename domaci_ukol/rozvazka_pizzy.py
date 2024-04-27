@@ -4,34 +4,39 @@ class Item:
         self.price = price
 
     def __str__(self):
-        return f"Pizza {self.name}: stojí {self.price} Kč."
+        return f"Položka {self.name}: stojí {self.price} Kč."
 
 class Pizza(Item):
+    ingredient_prices = {
+        "sýr": (50, 20),
+        "rajčata": (50, 15),
+        "šunka": (50, 17),
+        "salám": (50, 16),
+        "špenát": (50, 14),
+        "smetana": (30, 18),
+    }
+
     def __init__(self, name, price, ingredients):
         super().__init__(name, price)
         self.ingredients = ingredients
 
-    def add_extra(self, ingredient, quantity, price_per_ingredient):
-        self.ingredients[ingredient] = quantity
-        self.price += quantity * price_per_ingredient
-        priece_per_ingredient = 0.2
+    def add_extra(self, ingredient, quantity):
+        if ingredient in self.ingredient_prices:
+            price_per_ingredient = self.ingredient_prices[ingredient][1]
+            self.ingredients[ingredient] = quantity
+            self.price_extra = self.price + price_per_ingredient            
+        else:
+            print(f"Ingredience navíc {self.ingredient_prices} není k dispozici")
 
     def __str__(self):
-        return f"Pizza {self.name} s extra ingrediencí {self.ingredients} stojí {self.price} Kč."
+        ingredients_str = "/ ".join([f"{ingredient}: {quantity} g" for ingredient, quantity in self.ingredients.items()]) 
+        return f"Pizza {self.name} s ingrediencí navíc / {ingredients_str} / stojí celkem {self.price_extra} Kč."
 
-pizza = {                   # Název, cena
-    "Margarita", 200,
-    "Prosciuto", 180,
-    "Salami", 190
-}
-
-ingredients = {             # Název extra ingredience, množství
-    "sýr": 50,
-    "rajčata": 50,
-    "olivy": 50,
-    "šunka": 50,
-    "salám": 50
-}
+# Název, cena, ingredience
+margarita = Pizza("Margarita", 180, {"sýr": 100, "rajčata": 150})
+prosciuto = Pizza("Prosciuto", 195, {"sýr": 100, "rajčata": 150, "šunka": 150})
+salami = Pizza("Salami", 190, {"sýr": 100, "rajčata": 150, "salám": 150})
+spinaci = Pizza("Spinaci", 210, {"sýr": 100, "smetana": 100, "špenát": 150})
 
 
 class Drink(Item):
@@ -40,37 +45,53 @@ class Drink(Item):
         self.volume = volume
     
     def __str__(self):
-        return f"Nápoj {self.name} o objemu {self.volume} ml stojí {self.price} Kč."     
+        return f"Nápoj {self.name} {self.volume} ml stojí {self.price} Kč."     
 
-drink = {                   # Název nápoje, množství v ml
-    "cola": 500,
-    "soda": 500,
-    "sprite": 500,
-    "mirinda": 500
-}
+# Název nápoje, množství v ml
+cola = Drink("cola", 45, 500)
+soda = Drink("soda", 25, 500)
+mirinda = Drink("mirinda", 45, 500)
+
+# def calculate_order_price(pizza, drink, ingredient_prices):
+#     for ingredient in ingredient_prices:
+#         cena_celkem = Pizza.price + Drink.price + price_per_ingredient
+#         return cena_celkem
+
 
 class Order:
     def __init__(self, customer_name, delivery_address, items):
         self.customer_name = customer_name
         self.delivery_address = delivery_address
         self.items = items
-        self.status = "Nová"
+        self.status = "Nová objednávka"
     
     def mark_delivered(self):
         self.status = "Doručeno"
 
+    ingredient_prices = {
+            "sýr": (50, 20),
+            "rajčata": (50, 15),
+            "šunka": (50, 17),
+            "salám": (50, 16),
+            "špenát": (50, 14),
+            "smetana": (30, 18),
+        }
+
+    def get_total_price(self):
+        total_price = 0
+        for item in self.items:
+            price_per_ingredient = ingredient_prices(ingredient[1])
+            total_price += Pizza.price + Drink.price + price_per_ingredient
+        return total_price
+
     def __str__(self):
-        return f"Zákazník {self.custormer_name} s adresou {self.delivery_address} objednal: {self.items}, objednávka {self.status}."
+        item_list = "/".join([str(item) for item in self.items])
+        return f"{self.status}: {self.customer_name} / {self.delivery_address} / {self.items} / Celková cena objednávky je {total_price()} Kč."
 
-# order_1 = Order("Jaroslav Novák", "Palackého 233, Klatovy", "Margarita", "sýr", "soda")
-# order_2 = Order("paní Krásná", "Záletná 20, Lhotka", "Prosciuto", "olivy", "cola")
-# order_3 = Order("pan Nerd", "V Koncích 1, Hůrka", "Salami", "mirinda")
+Jaroslav_Novak = Order("Jaroslav Novák", "Palackého 233, Klatovy", ["Pizza Spinaci", {"špenát": 50}])
+pani_Krasna = Order("paní Krásná", "Záletná 20, Lhotka", ["Pizza Prosciuto", {"špenát": 50}, "cola"])
+pan_Nerd = Order("pan Nerd", "V Koncích 1, Hůrka", ["Pizza Salami", "soda"])
 
-order = (
-    ["Jaroslav Novák", "Palackého 233, Klatovy", "Margarita", "sýr", "soda"],
-    ["paní Krásná", "Záletná 20, Lhotka", "Prosciuto", "olivy", "cola"],
-    ["pan Nerd", "V Koncích 1, Hůrka", "Salami", "mirinda"]
-)
 
 class DeliveryPerson:
     def __init__(self, name_person, phone_number):
@@ -82,8 +103,8 @@ class DeliveryPerson:
     def assign_order(self, order):
         if self.available:
             self.current_order = order
-            # self.current_order.status = "Na cestě"
-            return f"Objednávka {self.current_order} byla přiřazena doručovateli {self.name_person} s telefonem {self.phone_number}."
+            self.current_order.status = "Objednávka na cestě"
+            return f"{self.current_order.status} / byla přiřazena doručovateli." # byla přiřazena doručovateli {self.name_person} s telefonem {self.phone_number}."
         else:
             self.available = False
             return f"Bohužel momentálně není doručovatel k dispozici."
@@ -91,26 +112,48 @@ class DeliveryPerson:
     def complete_delivery(self):
         if self.current_order:
             self.current_order.mark_delivered()
-            return f"Objednávka byla přiřazena doručovateli {self.name_person}, telefonní číslo {self.phone_number}."
-            # self.current_order = None
-            # self.available = True
+            self.current_order = None
+            self.available = True
+            return f"Objednávka byla doručena doručovatelem {self.name_person}, telefonní číslo {self.phone_number}." 
     
     def __str__(self):
+            availability = "available" if self.available else "not available"
             return f"Doručovatel {self.name_person} nemá žádnou objednávku k doručení."
         
    
-deliveryPerson = (                  # Jméno doručovatele, telefon
-    ["Orlando", 775432234],
-    ["George", 774123345],
-    ["Brandon", 775123321]
-)
+# Jméno doručovatele, telefon
+Orando = DeliveryPerson("Orlando", 775432234)
+George = DeliveryPerson("George", 774123345)
+Brandon = DeliveryPerson("Brandon", 775123321)
 
-#kontrola kódu:
-# vytvoření objendávky pizzy
-print(order[0])
-# vytvoření instance doručovatele
-deliveryPerson = DeliveryPerson("George", "774123345")
-deliveryPerson.assing_order(order[0])
-# přiřazení objednávky doručovateli
 
-# doručení objednávky
+# #kontrola kódu:
+# # vytvoření nové objendávky pizzy
+# Order = Jaroslav_Novak
+# print(Jaroslav_Novak)
+# # vytvoření instance volného doručovatele
+# DeliveryPerson = George
+# # přiřazení objednávky doručovateli
+# print(DeliveryPerson.assign_order(Jaroslav_Novak))
+# print(George)
+# # doručení objednávky
+# print(DeliveryPerson.complete_delivery())
+# print(Order)
+
+
+# spočítat cenu objednávky paní Krásná
+#Pizza Prosciuto, 195 Kč, extra šunka 50 g za 17 Kč , cola 500 ml za 45 Kč  - nefunguje
+#pani_Krasna = Order("paní Krásná", "Záletná 20, Lhotka", ["Pizza Prosciuto", {"šunka": 50}, "cola"])
+#extra ingredience špenát 50, 14
+Order = pani_Krasna
+print(pani_Krasna)
+Prosciuto = Pizza("Prosciuto", 195, {"sýr": 100, "rajčata": 150, "šunka": 150})
+Prosciuto.add_extra("špenát", 50)
+print(Prosciuto)
+print(cola)
+#celková cena objednávky
+total_price = pani_Krasna.get_total_price()
+print("Celková cena objednávky:", total_price, "Kč.")
+
+
+
