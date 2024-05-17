@@ -1,0 +1,2 @@
+Chci tento text zapsat do souboru.
+Nechci tento text zapsat do souboru.
